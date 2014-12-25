@@ -12,7 +12,7 @@ var w = 800, // Width of SVG.
     r0 = 200, // Radius of inner circle.
     r1 = Math.min(w, h) / 2 - 10, // Radius of outer circle.
     r2=(r1-r0)/13, // Radius delta of days.
-    rl = r1, // Radial distance of labels.
+    rl = r1 - 5, // Radial distance of labels.
     months = [ // Name array for month labels.
      "Jan","Feb","Mar","Apr",
      "May","Jun","Jul","Aug",
@@ -69,15 +69,28 @@ var expiredColors = monthColors.map(function(c) {
 
 
 var getDayIndex = function(d) {
-    var date = d.getDate() - 1;
-    var day = d.getDay();
-    return (day - date + 35) % 7 + date;
+    if (d instanceof Date) {
+        var date = d.getDate() - 1;
+        var day = d.getDay();
+        return (day - date + 35) % 7 + date;
+    }
+
+    return d;
+}
+
+var getAngle = function(d, offset) {
+    offset = offset || 0
+    return (getDayIndex(d)+offset)/37*(endAngle-startAngle)+startAngle;
+}
+
+var toDeg = function(rad) {
+    return rad * 180 / Math.PI;
 }
 
 // Define the arc parameters for the individual days.
 var arc = d3.svg.arc()
-    .startAngle(function(d) { return getDayIndex(d)/37*(endAngle-startAngle)+startAngle; })
-    .endAngle(function(d) { return (getDayIndex(d)+1)/37*(endAngle-startAngle)+startAngle; })
+    .startAngle(function(d) { return getAngle(d); })
+    .endAngle(function(d) { return getAngle(d, 1); })
     //.endAngle(function(d) { return (d.getMonth()+1)*Math.PI/6; })
     .innerRadius(function(d) { return r0+(12 - d.getMonth())*r2; })
     .outerRadius(function(d) { return r0+(12 - d.getMonth()-1)*r2; })
@@ -122,14 +135,13 @@ vis.selectAll(".DayLabel")
     .data(dates)
     .enter().append("svg:text")
         .attr("transform", function(d) {
-            var i = getDayIndex(d);
-            var angle = Math.PI/2 - ((i+0.5)/37*(endAngle-startAngle)+startAngle);
+            var angle = Math.PI/2 - getAngle(d, 0.5);
             var r = (11 - d.getMonth() + 0.3) * r2 + r0
             return "translate("
                 +(w/2+(r*Math.cos(angle)))
                 +","
                 +(h/2-(r*Math.sin(angle)))
-                +") rotate("+((endAngle-startAngle)*180/Math.PI/37*(i+0.5))+")";
+                +") rotate("+toDeg(getAngle(d, 0.5))+")";
         })
         .attr("text-anchor", "middle")
         .attr("style"," font-style: normal; font-size: 6pt;")
@@ -141,36 +153,22 @@ vis.selectAll(".DayLabel")
             })
         .text(function(d){return d.getDate();})
 
-
-
-// Add labels to the months.
-vis.selectAll(".MonthLabel")
-    .data(months)
-    .enter().append("svg:text")
-        .attr("class", "MonthLabel")
-        .attr("transform", "translate(" +  (w/2 - 50) + "," + (h/2 - r0) + ")")
-        .attr("text-anchor", "middle")
-        .attr("style"," font-style: normal; font-size: 8pt;")
-        .attr("text-antialiasing","true")
-        .attr("dy", function(d,i) { return -(11 - (i - 0.5)) *r2; })
-        .text(function(d,i){return d;})
-;
-
 vis.selectAll(".DOWLabel")
     .data(days)
     .enter().append("svg:text")
         .attr("class", "DOWLabel")
         .attr("transform", function(d,i) {
-            var angle = Math.PI/2 - ((i+0.5)/37*(endAngle-startAngle)+startAngle);
+            var angle = Math.PI/2 - getAngle(i, 0.5);
             return "translate("
                 +(w/2+(rl*Math.cos(angle)))
                 +","
                 +(h/2-(rl*Math.sin(angle)))
-                +") rotate("+((endAngle-startAngle)*180/Math.PI/37*(i+0.5))+")";
+                +") rotate("+toDeg(getAngle(i, 0.5))+")";
          })
         .attr("text-anchor", "middle")
         .attr("style","font-size: 8pt; font-style: normal")
         .attr("text-antialiasing","true")
+        .attr("fill", "#fff")
         .text(function(d,i){return d;})
 
 // Add the central label.
