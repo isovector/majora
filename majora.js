@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html>
-  <body>
-      <div id="test"></div>
-      <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?2.1.3"></script>
-      <script type="text/javascript" src="https://raw.githubusercontent.com/bgrins/TinyColor/master/tinycolor.js"></script>
-      <script type="text/javascript">
+var fs = require('fs');
+var d3 = require('d3');
+var tinycolor = require('tinycolor2');
+var xmldom = require('xmldom');
+
 var startDate = new Date("Jan 1 2015")
 var now = new Date()
 var w = 800, // Width of SVG.
@@ -45,7 +43,7 @@ var w = 800, // Width of SVG.
     endAngle = 2 * Math.PI * 7/8, // ~300 degrees
     dates=[]; // Array to hold 1 yr of dates.
     var endDate = new Date(startDate); // End date, incremented later.
-    vis = d3.select("#test") // SVG area to send output to.
+    vis = d3.select("body") // SVG area to send output to.
       .append("svg:svg")
       .attr("width", w)
       .attr("height", h)
@@ -187,17 +185,37 @@ vis.selectAll(".lbl")
     .attr("dy", 5)
     .text(function(d,i){return d;})
 ;
-// Append an SVG download link.
-var html = d3.select("svg")
+var svg = d3.select("svg")
     .attr("version", 1.1)
-    .attr("xmlns", "http://www.w3.org/2000/svg")
-    .node().parentNode.innerHTML;
+    .attr("xmlns", "http://www.w3.org/2000/svg");
 
-d3.select("body").append("a")
-    .attr("title", "file.svg")
-    .attr("href-lang", "image/svg+xml")
-    .attr("href", "data:image/svg+xml;base64,\n" + btoa(html))
-    .text("Right-click & save as SVG");
-      </script>
-  </body
-</html>
+function dom_string_lower(ds){
+    // from http://stackoverflow.com/questions/20693235/get-lowercase-tag-names-with-xmldom-xmlserializer-in-node-js/20704228
+    var cd = {}, //var to backup cdata contents
+        i = 0,//key integer to cdata token
+        tk = String(new Date().getTime());//cdata to restore
+
+    //backup cdata and attributes, after replace string by tokens
+    ds = ds.replace(/\<!\[CDATA\[.*?\]\]\>|[=]["'].*?["']/g, function(a){
+        var k = tk + "_" + (++i);
+        cd[k] = a;
+        return k;
+    });
+
+    //to lower xml/html tags
+    ds = ds.replace(/\<([A-Z\/])+([=]| |\>)/g, function(a, b){
+        return String(a).toLowerCase();
+    });
+
+    //restore cdata contents
+    for(var k in cd){
+        ds = ds.replace(k, cd[k]);
+    }
+
+    cd = null;//Clean variable
+    return ds;
+}
+
+var svgXML = (new xmldom.XMLSerializer()).serializeToString(svg[0][0]);
+fs.writeFile('/tmp/majora.svg', dom_string_lower(svgXML));
+
