@@ -5,8 +5,8 @@ var xmldom = require('xmldom');
 
 var startDate = new Date("Jan 1 2015")
 var now = new Date()
-var w = 800, // Width of SVG.
-    h = 800, // Height of SVG.
+var w = 1440, // Width of SVG.
+    h = 900, // Height of SVG.
     r0 = 200, // Radius of inner circle.
     r1 = Math.min(w, h) / 2 - 10, // Radius of outer circle.
     r2=(r1-r0)/13, // Radius delta of days.
