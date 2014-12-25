@@ -3,8 +3,10 @@
   <body>
       <div id="test"></div>
       <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?2.1.3"></script>
+      <script type="text/javascript" src="https://raw.githubusercontent.com/bgrins/TinyColor/master/tinycolor.js"></script>
       <script type="text/javascript">
 var startDate = new Date("Jan 1 2015")
+var now = new Date()
 var w = 800, // Width of SVG.
     h = 800, // Height of SVG.
     r0 = 200, // Radius of inner circle.
@@ -16,6 +18,20 @@ var w = 800, // Width of SVG.
      "May","Jun","Jul","Aug",
      "Sep","Oct","Nov","Dec"
     ],
+    monthColors = [
+        "#661111",
+        "#440011",
+        "#ff8800",
+        "#881122",
+        "#ffff44",
+        "#226600",
+        "#33dd33",
+        "#006644",
+        "#112266",
+        "#336688",
+        "#443366",
+        "#221133"
+    ],
     days = repeatArray([
      "Sun",
      "Mon",
@@ -25,7 +41,6 @@ var w = 800, // Width of SVG.
      "Fri",
      "Sat",
     ], 37),
-    now = new Date("June 21 2015"),
     startAngle = 0,
     endAngle = 2 * Math.PI * 7/8, // ~300 degrees
     dates=[]; // Array to hold 1 yr of dates.
@@ -47,6 +62,10 @@ function repeatArray(arr, count) {
   }
   return b;
 }
+
+var expiredColors = monthColors.map(function(c) {
+    return tinycolor(c).desaturate(90).toString()
+})
 
 
 var getDayIndex = function(d) {
@@ -70,18 +89,34 @@ for (
     d.setDate(d.getDate()+1)
 ) dates.push(new Date(d));
 // Draw faint arcs for each day (weekends filled, else outlined).
+vis.append("svg:rect")
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("stroke", "#000000")
+    .attr("fill", "#000000")
+
 vis.selectAll("g.AllDays")
     .data(dates)
     .enter().append("svg:g")
         .attr("class", "AllDays")
         .attr("transform", "translate(" + (w/2) + "," + (h/2) + ")")
     .append("svg:path")
-        .attr("stroke", function(d, i) { return d3.hsl(0,0.25,0.75) })
+        .attr("stroke", function(d, i) {
+            return((d.getTime() < now.getTime()
+                ? monthColors
+                : monthColors)
+                [d.getMonth()]);
+            })
         .attr("fill", function(d, i) {
-            return (d.getTime() < now.getTime())?"#cccccc":"#ffffff";
+            return((d.getTime() < now.getTime()
+                ? monthColors
+                : expiredColors)
+                [d.getMonth()]);
+//            return (d.getTime() < now.getTime())?"#cccccc":"#ffffff";
          })
         .attr("d", arc)
 ;
+
 
 vis.selectAll(".DayLabel")
     .data(dates)
@@ -99,7 +134,13 @@ vis.selectAll(".DayLabel")
         .attr("text-anchor", "middle")
         .attr("style"," font-style: normal; font-size: 6pt;")
         .attr("text-antialiasing","true")
+        .attr("fill", function(d, i) {
+            return((d.getTime() < now.getTime())
+                ? monthColors[d.getMonth()]
+                : "#000000");
+            })
         .text(function(d){return d.getDate();})
+
 
 
 // Add labels to the months.
@@ -136,15 +177,16 @@ vis.selectAll(".DOWLabel")
 vis.selectAll(".lbl")
     .data([
         "-" +
-            (((endDate.getTime() - now.getTime()) / 1000 / 3600)|0) +
+            ((((endDate.getTime() - now.getTime()) / 1000 / 3600)|0) + 24) +
             " Hours Remain-"
     ])
     .enter().append("svg:text")
     .attr("class","lbl")
     .attr("text-anchor", "middle")
     .attr("style"," font-weight: bold; font-size: 150%")
+    .attr("fill", "#fff")
     .attr("transform", "translate(" + (w/2) + "," + (h/2) + ")")
-    .attr("dy",function(d,i){return (i-0.5)*10})
+    .attr("dy", 5)
     .text(function(d,i){return d;})
 ;
 // Append an SVG download link.
